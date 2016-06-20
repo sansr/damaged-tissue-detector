@@ -9,7 +9,7 @@ model tissue_detector
 global {
 	// Initial number of robots
 	int nb_robots_init;
-	int grid_size <- 50;
+	int grid_size <- 100;
 	
 	// Diffusion  rate from input
 	float diff_rate_chem1;
@@ -20,6 +20,12 @@ global {
 	float generation_rt_chem1;
 	float generation_rt_chem2;
 	float generation_rt_chem3;
+	
+	// Chemical 1 threshold
+	float chem1_threshold;
+	
+	// Probabilities od differentiation
+	float prob_diff_chem1 <- 0.01;
 	
 	// Read image of the tissue
 	file map_init <- image_file("../images/damaged_tissue2.png");
@@ -46,8 +52,9 @@ global {
 	}
 	
 	reflex diffuse {
-      diffuse var:chem1 on:tissue_cell proportion: 0.9 radius:2 propagation: gradient;
-   }
+      diffuse var:chem1 on:tissue_cell proportion: 0.5 radius:2 propagation: gradient;
+      diffuse var:chem2 on:tissue_cell proportion: 0.5 radius:2 propagation: gradient;
+    }
 }
 
 // Agent that represents all the explored tissue (a sample).
@@ -86,11 +93,29 @@ species robot {
 	tissue_cell choose_cell_without_robot {
 		tissue_cell my_cell_tmp <- shuffle(my_cell.neighbors) first_with (!(empty (robot inside (each))));
 		if my_cell_tmp = nil {
-			return one_of (my_cell.neighbors);
+			if check_chemicals()=true{
+				tissue_cell my_cell_maximize <- (my_cell.neighbors) with_max_of (each.chem1);
+				if my_cell_maximize = nil {
+					return one_of (my_cell.neighbors);
+				} else {
+					return my_cell_maximize;
+				}
+			} else {
+				return one_of (my_cell.neighbors);
+			}
 		} else {
 			list<tissue_cell> cells <- my_cell.neighbors where (empty(robot inside (each)));
 			if cells != nil {
-				return one_of (cells);
+				if check_chemicals()=true {
+					tissue_cell my_cell_maximize <- (cells) with_max_of (each.chem1);
+					if my_cell_maximize = nil {
+						return one_of (cells);
+					} else {
+						return my_cell_maximize;
+					}
+				} else {
+					return one_of (cells);
+				}
 			} else {
 				return my_cell;
 			}
@@ -99,9 +124,10 @@ species robot {
 	
 	// Choose one cell to move
 	tissue_cell choose_cell {
-		tissue_cell my_cell_tmp <- shuffle(my_cell.neighbors) first_with (!(empty (damaged_cell inside (each))));
-		if my_cell_tmp != nil {
-			if empty(robot inside my_cell_tmp) = true {
+		list<tissue_cell> my_cells_tmp <- shuffle(my_cell.neighbors) where (!(empty (damaged_cell inside (each))));
+		if my_cells_tmp != nil {
+			tissue_cell my_cell_tmp <- one_of (my_cells_tmp where (empty(robot inside (each))));
+			if my_cell_tmp != nil {
 				return my_cell_tmp;
 			} else {
 				tissue_cell cell_without_robot <- choose_cell_without_robot();
@@ -113,15 +139,18 @@ species robot {
 		}
 	}
 	
+	
 	// Check if there is some chemical in the current tissue_cell
 	action check_chemicals type:bool {
-		if my_cell.chem1 != 0.0 or my_cell.chem2 != 0.0 or my_cell.chem3 != 0.0{
+		list<tissue_cell> my_neighbors <- (my_cell.neighbors) where (each.chem1 > 0.0 or each.chem2 > 0.0 or each.chem3 > 0.0);
+		if my_neighbors != nil {
 			return true;
 		} else {
 			return false;
 		}
 	}
 	
+	// Update chemicals concentrations intop grid cells
 	reflex emit_chem1 when:emitting_chem1=true{
 		tissue_cell(location).chem1 <- tissue_cell(location).chem1+generation_rt_chem1;
 	}
@@ -150,8 +179,19 @@ species robot {
 			stopped <- true;
 			ask one_of (cell_to_kill) {
 				do die;
+				myself.my_cell.is_damaged <- false;
 			}
 			emitting_chem1 <- true;
+		}
+	}
+	
+	// Rule 3: If the magnitude of chem1 is greater that threshold
+	
+	// Rule 4: if chem1 is detected -> move up the gradient and differentiate with prob P.
+	reflex detect_chem1 {
+		if my_cell.chem1 > 0.001 {
+			stopped <- true;
+			emitting_chem2 <- true;
 		}
 	}
 	
@@ -174,11 +214,12 @@ experiment tissue_detector type: gui {
 	parameter "Diffusion rate of chemical 1" var:diff_rate_chem1 init:0.5 min: 0.0 max: 1.0 category:"Nanorobots";
 	parameter "Diffusion rate of chemical 2" var:diff_rate_chem2 init:0.5 min: 0.0 max: 1.0 category:"Nanorobots";
 	parameter "Diffusion rate of chemical 3" var:diff_rate_chem3 init:0.5 min: 0.0 max: 1.0 category:"Nanorobots";
+	parameter "Chemical 1 threshold" var:chem1_threshold init:0.2 min:0.0 category:"Chemicals";
 	output {
 		display main_display {
 			grid tissue_cell lines:rgb("grey");
-			species robot aspect:base;
 			species damaged_cell aspect:base;
+			species robot aspect:base;
 		}
 	}
 }

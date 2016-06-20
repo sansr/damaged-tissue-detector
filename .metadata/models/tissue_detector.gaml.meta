@@ -1,6 +1,6 @@
 #
-#Sun Jun 19 22:22:22 CEST 2016
-operators=envelope~-~as~one_of~first_with~shuffle~.~\!~empty~inside~\=~where~\!\=~or~+~circle~rgb~*~neighbors_at~as_matrix~point~internal_at
+#Mon Jun 20 13:33:01 CEST 2016
+operators=envelope~-~as~one_of~first_with~shuffle~.~\!~empty~inside~\=~where~\!\=~with_max_of~or~>~+~circle~rgb~*~neighbors_at~as_matrix~point~internal_at
 plugins=msi.gama.core~ummisco.gaml.extensions.maths
 statements=action~let~if~else~return~init~set~reflex~ask~do~aspect~draw~create~loop~diffuse~output~display~display_grid~display_population
 skills=reflex~grid
