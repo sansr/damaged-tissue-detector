@@ -250,14 +250,6 @@ species damaged_cell {
 		recheable_cells <- my_cell.neighbors where (empty(damaged_cell inside each));
 	}
 	
-	reflex divide when:(recheable_cells != nil) and (flip(div_prob)) {
-		tissue_cell my_cell_tmp <- one_of(recheable_cells);
-		ask my_cell_tmp {
-			create damaged_cell number:1 with:[location::self.location, my_cell::tissue_cell(self.location)];
-		}
-		
-	}
-	
 	aspect base {
 		draw circle(size) color:color;
 	}
