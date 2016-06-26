@@ -16,6 +16,7 @@ global torus:false {
 	int nb_robots_init;
 	tissue_cell my_cell_ini;
 	float max_t_differenciation;
+	float max_lost_timer;
 	
 	// Grid global variables
 	int grid_size <- 40;
@@ -24,6 +25,7 @@ global torus:false {
 	float energy_reproduce;
 	float nutrient_uptake;
 	int nb_damaged_cells -> {length (damaged_cell)};
+	int nb_robots -> {length (robot)};
 	
 	// Diffusion  rate from input
 	float diff_rate_chem1;
@@ -155,6 +157,9 @@ species robot skills: [moving] {
 	float max_time <- max_t_differenciation;
 	float local_timer <- 0.0 max: max_time;
 	
+	// Loose timer
+	float lost_timer <- max_lost_timer;
+	
 	tissue_cell my_cell update: tissue_cell(self.location);
 	tissue_cell my_first_cell;
 	
@@ -190,6 +195,10 @@ species robot skills: [moving] {
 		self.emitting <- "NO";
 		self.local_timer <- 0.0; // Reset the timer
 		self.differenciation_checked <- false; // To have the opportunity to differenciate again
+	}
+	
+	reflex i_am_lost when:lost_timer=0 {
+		do die;
 	}
 	
 	reflex go_back_injection_site {
@@ -257,6 +266,7 @@ species robot skills: [moving] {
 	
 	reflex dispatcher when:(state != "emitter") {
 		if (check_chemicals() = false and check_tumor() = false) {
+			lost_timer <- lost_timer - 1.0;
 			do random_walk();
 		} else if (check_tumor() = true) {
 			do kill_damaged_cell();
@@ -338,6 +348,7 @@ experiment tissue_detector type: gui {
 	parameter "Emision rate of chemical 2" var:generation_rt_chem2 init:0.1 min: 0.0 category:"Nanorobots";
 	parameter "Emision rate of chemical 3" var:generation_rt_chem3 init:0.1 min: 0.0 category:"Nanorobots";
 	parameter "Maximum differenciation time" var:max_t_differenciation init:2000.0 category:"Nanorobots";
+	parameter "Lost timer" var:max_lost_timer init:4000.0 category:"Nanorobots";
 	
 	// Chemical 1 parameters
 	parameter "Diffusion rate chemical 1" var:diff_rate_chem1 init:0.3 min: 0.0 max: 1.0 category:"Chemical 1";
@@ -374,6 +385,7 @@ experiment tissue_detector type: gui {
 		}
 		
 		monitor "Number of damaged cells" value: nb_damaged_cells;
+		monitor "Number of robots" value: nb_robots;
 	}
 	 
 }
