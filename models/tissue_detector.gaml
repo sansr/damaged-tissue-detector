@@ -7,10 +7,15 @@
 model tissuedetectorv2
 
 global torus:false {
-	// Initial number of robots
+	// Robots global variables
 	int nb_robots_init;
-	int grid_size <- 50;
 	tissue_cell my_cell_ini;
+	
+	// Grid global variables
+	int grid_size <- 50;
+	
+	// Damaged cell global variables
+	int nb_damaged_cells -> {length (damaged_cell)};
 	
 	// Diffusion  rate from input
 	float diff_rate_chem1;
@@ -34,10 +39,12 @@ global torus:false {
 	float chem3_sensing_th <- 0.0001;
 	
 	// Evaporation of chemicals
-	float evaporation_per_cycle <- 0.01 min: 0.0 max: 2.0;
+	float evaporation_per_cycle_chem1 <- 0.01 min: 0.0;
+	float evaporation_per_cycle_chem2 <- 0.01 min: 0.0;
+	float evaporation_per_cycle_chem3 <- 0.01 min: 0.0;
 	
 	// Tumor cell: division probability
-	float div_prob <- 0.01;
+	float div_prob <- 0.001;
 	
 	// Read image of the tissue
 	file map_init <- image_file("../images/damaged_tissue3.png");
@@ -49,7 +56,7 @@ global torus:false {
 		int i <- 0; // column
 		loop times:nb_robots_init+1 {
 			if i < 17 {
-				my_cell_ini <- tissue_cell[i+5,j+5];
+				my_cell_ini <- tissue_cell[i+20,j+20];
 				create robot with:[my_cell::my_cell_ini, location::my_cell_ini.location];
 				i <- i + 1;
 			} else {
@@ -88,9 +95,9 @@ grid tissue_cell height:grid_size width:grid_size neighbors:8 {
 	rgb color <- rgb(int(255 * (1 - chem1)), 255 * (1 - chem2), int(255 * (1 - chem3))) update:rgb(int(255 * (1 - chem1)), 255 * (1 - chem2), int(255 *(1 - chem3))) ;
 	
 	// Concentrations of the three different chemicals.
-	float chem1 <- 0.0 update: (chem1<=evaporation_per_cycle) ? 0.0 : chem1-evaporation_per_cycle; 
-	float chem2 <- 0.0 update: (chem2<=evaporation_per_cycle) ? 0.0 : chem2-evaporation_per_cycle;
-	float chem3 <- 0.0 update: (chem3<=evaporation_per_cycle) ? 0.0 : chem3-evaporation_per_cycle;
+	float chem1 <- 0.0 update: (chem1<=evaporation_per_cycle_chem1) ? 0.0 : chem1-evaporation_per_cycle_chem1; 
+	float chem2 <- 0.0 update: (chem2<=evaporation_per_cycle_chem2) ? 0.0 : chem2-evaporation_per_cycle_chem2;
+	float chem3 <- 0.0 update: (chem3<=evaporation_per_cycle_chem3) ? 0.0 : chem3-evaporation_per_cycle_chem3;
 	
 	// List of neighbours at distance 1
 	list<tissue_cell> neighbors <- self neighbors_at 1;
@@ -243,13 +250,13 @@ species damaged_cell {
 		recheable_cells <- my_cell.neighbors where (empty(damaged_cell inside each));
 	}
 	
-	/*reflex divide when:(recheable_cells != nil) and (flip(div_prob)) {
+	reflex divide when:(recheable_cells != nil) and (flip(div_prob)) {
 		tissue_cell my_cell_tmp <- one_of(recheable_cells);
 		ask my_cell_tmp {
 			create damaged_cell number:1 with:[location::self.location, my_cell::tissue_cell(self.location)];
 		}
 		
-	}*/
+	}
 	
 	aspect base {
 		draw circle(size) color:color;
@@ -261,15 +268,27 @@ species damaged_cell {
 }
 
 experiment tissue_detector type: gui {
+	// Nanorobots parameters
 	parameter "Initial number of nanorobots: " var:nb_robots_init init:200 min:1 category:"Nanorobots";
 	parameter "Emision rate of chemical 1" var:generation_rt_chem1 init:0.1 min: 0.0 category:"Nanorobots";
 	parameter "Emision rate of chemical 2" var:generation_rt_chem2 init:0.1 min: 0.0 category:"Nanorobots";
 	parameter "Emision rate of chemical 3" var:generation_rt_chem3 init:0.1 min: 0.0 category:"Nanorobots";
-	parameter "Evaporation per cycle" var:evaporation_per_cycle init:0.01 min:0.0 category:"Chemicals";
-	parameter "Diffusion rate of chemical 1" var:diff_rate_chem1 init:0.3 min: 0.0 max: 1.0 category:"Chemicals";
-	parameter "Diffusion rate of chemical 2" var:diff_rate_chem2 init:0.3 min: 0.0 max: 1.0 category:"Chemicals";
-	parameter "Diffusion rate of chemical 3" var:diff_rate_chem3 init:0.3 min: 0.0 max: 1.0 category:"Chemicals";
-	parameter "Chemical 1 threshold" var:chem1_threshold init:0.2 min:0.0 category:"Chemicals";
+	
+	// Chemical 1 parameters
+	parameter "Diffusion rate chemical 1" var:diff_rate_chem1 init:0.3 min: 0.0 max: 1.0 category:"Chemical 1";
+	parameter "Evaporation per cycle chemical 1" var:evaporation_per_cycle_chem1 init:0.01 min:0.0 category:"Chemical 1";
+	parameter "Chemical 1 threshold" var:chem1_threshold init:0.5 min:0.0 category:"Chemical 1";
+	parameter "Sensing chemical 1 threshold" var:chem1_sensing_th init:0.001 category:"Chemical 1";
+	
+	// Chemical 2 parameters
+	parameter "Diffusion rate chemical 2" var:diff_rate_chem2 init:0.3 min: 0.0 max: 1.0 category:"Chemical 2";
+	parameter "Evaporation per cycle chemical 2" var:evaporation_per_cycle_chem2 init:0.01 min:0.0 category:"Chemical 2";
+	parameter "Sensing chemical 2 threshold" var:chem2_sensing_th init:0.001 category:"Chemical 2";
+	
+	// Chemical 3 parameters
+	parameter "Diffusion rate chemical 3" var:diff_rate_chem3 init:0.3 min: 0.0 max: 1.0 category:"Chemical 3";
+	parameter "Evaporation per cycle chemical 3" var:evaporation_per_cycle_chem3 init:0.01 min:0.0 category:"Chemical 3";
+	parameter "Sensing chemical 3 threshold" var:chem3_sensing_th init:0.001 category:"Chemical 3";
 	
 	output {
 		display main_display {
@@ -277,5 +296,14 @@ experiment tissue_detector type: gui {
 			species robot aspect:base;
 			species damaged_cell aspect:base;
 		}
+		
+		display Damaged_cell_information refresh:every(20) {
+			chart "Damaged cells evolution" type: series size: {1,1} position: {0, 0} {
+				data "number_of_preys" value: nb_damaged_cells color: #red ;
+			}
+		}
+		
+		monitor "Number of damaged cells" value: nb_damaged_cells;
 	}
+	 
 }
