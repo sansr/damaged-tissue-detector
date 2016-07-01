@@ -1,9 +1,9 @@
 #
-#Sun Jun 26 23:50:02 CEST 2016
-operators=envelope~-~length~as~rnd~.~>~or~\!~empty~inside~where~one_of~shuffle~\=~with_max_of~\!\=~+~and~>\=~flip~circle~*~/~?~<\=~\:~rgb~neighbors_at~as_matrix~point~sqrt~<~internal_at~every
+#Fri Jul 01 10:33:47 CEST 2016
+operators=envelope~-~length~as~rnd~.~>~or~\!~empty~inside~where~one_of~shuffle~\=~with_max_of~\!\=~+~and~>\=~flip~circle~*~/~?~<\=~\:~rgb~neighbors_at~sqrt~<~internal_at~as_matrix~point~every
 plugins=msi.gama.core~ummisco.gaml.extensions.maths
-statements=action~return~set~let~if~arg~else~ask~do~reflex~aspect~draw~init~create~user_command~loop~diffuse~output~display~display_grid~display_population~chart~data~monitor
+statements=action~return~set~let~if~arg~else~ask~do~reflex~aspect~draw~init~create~loop~user_command~diffuse~output~display~display_grid~display_population~chart~data~monitor
 skills=reflex~moving~grid
-constants=lime~red~white
+constants=lime~red~white~blue
 types=geometry~string~list~int~unknown~point~agent~rgb~float~bool~date~container~file~matrix
 actions=debug~error~tell~write~die~_init_~_step_~halt~pause~follow~goto~move~wander

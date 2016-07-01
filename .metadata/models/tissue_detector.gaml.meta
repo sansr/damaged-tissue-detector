@@ -1,5 +1,9 @@
 #
+<<<<<<< Updated upstream
 #Sun Jun 26 22:39:44 CEST 2016
+=======
+#Sun Jun 26 20:33:25 CEST 2016
+>>>>>>> Stashed changes
 operators=envelope~-~length~as~.~>~or~\!~empty~inside~where~one_of~shuffle~\=~with_max_of~\!\=~+~and~flip~circle~*~?~<\=~\:~rgb~neighbors_at~as_matrix~point~<~internal_at~every
 plugins=msi.gama.core~ummisco.gaml.extensions.maths
 statements=action~return~set~let~if~arg~else~ask~do~reflex~aspect~draw~init~loop~create~diffuse~output~display~display_grid~display_population~chart~data~monitor

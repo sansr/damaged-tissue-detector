@@ -57,7 +57,7 @@ global torus:false {
 	float div_prob <- 0.0;
 	
 	// Read image of the tissue
-	file map_init <- image_file("../images/damaged_tissue3.png");
+	file map_init <- image_file("../images/damaged_tissue4.png");
 	
 	// Set up the world
 	init {
@@ -69,8 +69,8 @@ global torus:false {
 			int side_dimension <- int(sqrt(world.nb_robots_init));
 			loop times:nb_robots_init+1 {
 				if i < side_dimension {
-					my_cell_ini <- tissue_cell[i+10,j+10];
-					create robot with:[my_cell::my_cell_ini, location::my_cell_ini.location, my_first_cell::tissue_cell(location)];
+					my_cell_ini <- tissue_cell[i+5,j+5];
+					create robot with:[my_cell::my_cell_ini, location::my_cell_ini.location, my_first_cell::my_cell_ini];
 					i <- i + 1;
 				} else {
 					i <- 0;
@@ -120,28 +120,27 @@ grid tissue_cell height:grid_size width:grid_size neighbors:8 {
 		create robot number:nb_robots_init with: [location::self.location, my_cell::tissue_cell(location), my_first_cell::tissue_cell(location)];
 	}
 	
-	/*action create_robots_from_cell {
+	action create_robots_from_cell {
 		int i <- 0;
 		int j <- 0;
 		int side_dimension <- int(sqrt(world.nb_robots_init));
-		int init_i <- int(location.x);
-		int init_j <- int(location.y);
-		int original_column <- init_i;
-		tissue_cell cell_tmp <- tissue_cell[init_i+i, init_j+j];
-		loop times:nb_robots_init+1 {
-			if i < side_dimension {	
-				create robot with:[location::self.location, my_cell::cell_tmp];
-				cell_tmp <- tissue_cell[init_i+i+1, init_i+j+1];
-				i <- i+1;
-			} else {
-				j <- j+1;
-				i <- original_column;
+		int iter <- 0;
+		loop times:side_dimension {
+			tissue_cell cell_tmp;
+			loop times:side_dimension {
+				if i < side_dimension {
+					cell_tmp <- tissue_cell[grid_x+i, grid_y+j];
+					create robot with:[my_cell::cell_tmp, location::cell_tmp.location, my_first_cell::cell_tmp];
+					i <- i+1;
+				}
 			}
+			i <- 0;
+			j <- j + 1;
 		}
-	} */
+	} 
 	
 	user_command create_robots_here action:create_robots;
-	//user_command create_robots_from_here action:create_robots_from_cell;
+	user_command create_robots_from_here action:create_robots_from_cell;
 }
 
 // Agent that represents each of the nanorobots.
@@ -150,7 +149,7 @@ species robot skills: [moving] {
 	rgb color <- #lime;
 	string chemicals <- "chem1" among: ["chem1", "chem2", "chem3"];
 	string emitting <- "NO" among: ["NO", "CHEM1", "CHEM2", "CHEM3"];
-	string state <- "wander" among: ["wander", "follower", "emitter"];
+	string state <- "wander" among: ["wander", "follower", "emitter", "going_injection_site"];
 	bool differenciation_checked <- false;
 	
 	// Temporal differenciation
@@ -201,11 +200,10 @@ species robot skills: [moving] {
 		do die;
 	}
 	
-	reflex go_back_injection_site {
-		if nb_damaged_cells = 0 {
-			emitting <- "NO";
-			do goto target:my_first_cell;  
-		}
+	reflex go_back_injection_site when: (nb_damaged_cells = 0) {
+		emitting <- "NO";
+		state <- "going_injection_site";
+		do goto target:my_first_cell;
 	}
 	
 	/*************************************** */
@@ -264,7 +262,7 @@ species robot skills: [moving] {
 	/*************************************** */
 	
 	
-	reflex dispatcher when:(state != "emitter") {
+	reflex dispatcher when:(state != "emitter" and state != "going_injection_site") {
 		if (check_chemicals() = false and check_tumor() = false) {
 			lost_timer <- lost_timer - 1.0;
 			do random_walk();
@@ -343,11 +341,11 @@ experiment tissue_detector type: gui {
 	parameter "Inicialization by injection" var:injected init:true category:"Inicialization method";
 	
 	// Nanorobots parameters
-	parameter "Initial number of nanorobots: " var:nb_robots_init init:150 min:1 category:"Nanorobots";
+	parameter "Initial number of nanorobots: " var:nb_robots_init init:36 min:1 category:"Nanorobots";
 	parameter "Emision rate of chemical 1" var:generation_rt_chem1 init:0.1 min: 0.0 category:"Nanorobots";
 	parameter "Emision rate of chemical 2" var:generation_rt_chem2 init:0.1 min: 0.0 category:"Nanorobots";
 	parameter "Emision rate of chemical 3" var:generation_rt_chem3 init:0.1 min: 0.0 category:"Nanorobots";
-	parameter "Maximum differenciation time" var:max_t_differenciation init:2000.0 category:"Nanorobots";
+	parameter "Maximum differenciation time" var:max_t_differenciation init:1000.0 category:"Nanorobots";
 	parameter "Lost timer" var:max_lost_timer init:4000.0 category:"Nanorobots";
 	
 	// Chemical 1 parameters
@@ -380,7 +378,12 @@ experiment tissue_detector type: gui {
 		
 		display Damaged_cell_information refresh:every(20) {
 			chart "Damaged cells evolution" type: series size: {1,1} position: {0, 0} {
-				data "number_of_preys" value: nb_damaged_cells color: #red ;
+				data "number_of_damaged_cells" value: nb_damaged_cells color: #red ;
+			}
+		}
+		display Robots_information refresh:every(20) {
+			chart "Robots evolution" type: series size: {1,1} position: {0, 0} {
+				data "number_of_robots" value: nb_robots color: #blue ;
 			}
 		}
 		
